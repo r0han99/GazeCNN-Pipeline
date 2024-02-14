@@ -391,6 +391,17 @@ def main_cs():
                 gaze_csv = pd.read_csv(os.path.join(candidate_path, "gaze.csv"))
                 source_images = os.path.join(candidate_path, f"{candidate}_interest_period")
 
+
+                candidate_config = os.path.join(candidate_path, "config.json")
+                
+                with open(candidate_config, 'r') as f:
+                    each_candidate_config = json.load(f)
+
+                start_sec = each_candidate_config['start']
+                end_sec = each_candidate_config['end']
+                start_frame, end_frame = estimation(start_sec, end_sec)
+
+
                 try:
                     with open(os.path.join(source_images, ".flag_file"), 'r') as f:
                         content = f.readline()
@@ -400,10 +411,19 @@ def main_cs():
                 
                 except FileNotFoundError:
 
+                    # st.success("in except")
+                    
+
                     image_files = os.listdir(source_images)
+                    # st.success(len(image_files))
+
                     sorted_img_files  = sorted(image_files, key=extract_number)
+                    # st.success(len(sorted_img_files))
                     interest_gaze = gaze_csv.iloc[start_frame:end_frame+1, :]
+                    # st.write(interest_gaze.shape)
                     interest_gaze['frames'] = sorted_img_files
+                    # st.write(sorted_img_files)
+                    # st.DataFrame(interest_gaze)
 
                     interest_gaze = interest_gaze[['gaze x [px]','gaze y [px]', 'frames']]
 

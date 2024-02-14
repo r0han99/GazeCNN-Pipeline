@@ -37,20 +37,20 @@ def interest_area(start_frame, end_frame, candidate, candidate_path):
     file_names = ["frames_" +x+".jpg" for x in list(map(str,list(np.arange(start_frame, end_frame+1))))]
     count_for_validation = len(file_names)
 
-    
 
     # validate if the files are already moved
-    if len(rm_macos_binaries(os.listdir(destination_folder_path))) == count_for_validation+1:
+    if len(rm_macos_binaries(os.listdir(destination_folder_path))) == count_for_validation:
         
         st.success(f"{candidate.capitalize()}: Interest Period is already created!")
 
     else:
+        
         st.markdown('Executing `Shutil Move!` copying interest area to a separate folder.')
         progress_bar = st.progress(0) 
         for i, file_name in enumerate(file_names):
             path_to_file = os.path.join(source_path, file_name)
             
-            shutil.move(path_to_file, destination_folder_path)
+            shutil.copy(path_to_file, destination_folder_path)
             
             # Update progress bar
             progress_percent = (i + 1) / len(file_names)
