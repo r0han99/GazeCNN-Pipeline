@@ -50,7 +50,7 @@ def interest_area(start_frame, end_frame, candidate, candidate_path):
         for i, file_name in enumerate(file_names):
             path_to_file = os.path.join(source_path, file_name)
             
-            shutil.copy(path_to_file, destination_folder_path)
+            shutil.move(path_to_file, destination_folder_path)
             
             # Update progress bar
             progress_percent = (i + 1) / len(file_names)

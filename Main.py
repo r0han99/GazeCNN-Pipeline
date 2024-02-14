@@ -516,6 +516,21 @@ def main_cs():
 
             st.title("Process Completed! Check Datafolders.")
 
+            st.divider()
+            st.title(":red[Commencing Delete Protocol]")
+
+            
+
+            
+            
+
+
+
+
+            
+
+
+
      
                 
 
