@@ -113,9 +113,31 @@ def rm_macos_binaries(item_list):
         
         return item_list
     
+def convert_minute_to_seconds(start, end):
+    # Function to convert a single minute value to seconds
+    def to_seconds(minutes):
+        return minutes * 60
+
+    # Convert start and end times from minutes to seconds
+    start_seconds = to_seconds(start)
+    end_seconds = to_seconds(end)
+    
+    return start_seconds, end_seconds
+
+    
 
 def extract_number(filename):
     return int(filename.split('_')[1].split('.')[0])
+
+
+def rm_flag_file(item_list):
+    try: 
+        item_list.remove(".flag_file")
+        return item_list
+
+    except:
+        
+        return item_list
 
 
 
@@ -327,31 +349,35 @@ def main_cs():
             st.markdown("#### Number of frames decomposed per each candidate")
             st.write(sample_size_for_video)
             st.divider()
-            for candidate in items:
-                candidate_path = os.path.join(TRIALS, candidate)
-                candidate_items = rm_macos_binaries(os.listdir(candidate_path))
-                st.markdown(f"#### {candidate}")
-                # st.code(candidate_items)
-                items_to_match = ["gaze.csv","*.mp4","config.json"]
 
-                matched_items = []
-                for pattern in items_to_match:
-                    for item in candidate_items:
-                        if fnmatch.fnmatch(item, pattern):
-                            matched_items.append(item)
+            proceed = False
+            if os.path.exists("./config.csv"):
+                proceed=True
+
+            # for candidate in items:
+            #     candidate_path = os.path.join(TRIALS, candidate)
+            #     candidate_items = rm_macos_binaries(os.listdir(candidate_path))
+            #     st.markdown(f"#### {candidate}")
+            #     # st.code(candidate_items)
+            #     items_to_match = ["gaze.csv","*.mp4","config.json"]
+
+            #     matched_items = []
+            #     for pattern in items_to_match:
+            #         for item in candidate_items:
+            #             if fnmatch.fnmatch(item, pattern):
+            #                 matched_items.append(item)
 
 
-                proceed = False
-                if "config.json" in matched_items:
-                    st.success("Config files exist!")
-                    with open(os.path.join(candidate_path, "config.json"), 'r') as f:
-                        st.write(f.readlines())
-                    exist_count += 1
-                    proceed = True
-
-                else:
-                    st.error("Config doesn't exist!")
-                    doesnt_exist_count +=1 
+            
+                # if "config.json" in matched_items:
+                #     st.success("Config files exist!")
+                #     with open(os.path.join(candidate_path, "config.json"), 'r') as f:
+                #         st.write(f.readlines())
+                #     exist_count += 1
+                #     proceed = True
+            else:
+                st.error("Config doesn't exist!")
+                doesnt_exist_count +=1 
 
 
         st.divider()
@@ -360,18 +386,24 @@ def main_cs():
             
             candidate_interest_period_json = {}
 
-
+            data = pd.read_csv("config.csv")
             for candidate in items:
                 candidate_path = os.path.join(TRIALS, candidate)
                 # candidate_items = rm_macos_binaries(os.listdir(candidate_path))
 
-                candidate_config = os.path.join(candidate_path, "config.json")
+                s = data.set_index("candidate").loc[candidate, 'start']
+                e = data.set_index("candidate").loc[candidate, 'end']
                 
-                with open(candidate_config, 'r') as f:
-                    each_candidate_config = json.load(f)
+                start_sec, end_sec = convert_minute_to_seconds(s,e)
 
-                start_sec = each_candidate_config['start']
-                end_sec = each_candidate_config['end']
+    
+                # candidate_config = os.path.join(candidate_path, "config.json")
+                
+                # with open(candidate_config, 'r') as f:
+                #     each_candidate_config = json.load(f)
+
+                # start_sec = each_candidate_config['start']
+                # end_sec = each_candidate_config['end']
 
         
                 #st.markdown(f"- Estimating Interest area ( Start Frame to End Frame ) for `{candidate}`")
@@ -412,9 +444,7 @@ def main_cs():
                 except FileNotFoundError:
 
                     # st.success("in except")
-                    
-
-                    image_files = os.listdir(source_images)
+                    image_files = rm_macos_binaries(rm_flag_file(os.listdir(source_images)))
                     # st.success(len(image_files))
 
                     sorted_img_files  = sorted(image_files, key=extract_number)
@@ -434,8 +464,6 @@ def main_cs():
             st.divider()
 
             st.title("Phase-5 MobileNetV2 Model Engine: Classification!")
-
-           
             
             with st.status("Loading Model", expanded=False):
 
@@ -542,6 +570,8 @@ def main_cs():
             
 
             
+
+            
             
 
 
@@ -562,3 +592,12 @@ if __name__ == '__main__':
     st.set_page_config(layout="wide", page_title="GazeCNN Software")
     st.markdown('''<center><span style="font-size:80px; font-family:'poppins'; color:orangered;">GazeCNN Pipeline Software</span></center>''',unsafe_allow_html=True)
     main_cs()
+
+    for _ in range(10):
+        st.sidebar.markdown("")
+    cols = st.sidebar.columns([3,1,3])
+    cols[0].image("./assets/brain.png", width=100)
+    cols[1].markdown("")
+
+    cols[1].markdown('''<center><span style="font-size:30px; font-family:'poppins'; color:black; font-weight:bold;"><a href="https://www.colorado.edu/lab/del/" style="color: black; text-decoration: none;"><u>Dellab</u></a></span></center>''',unsafe_allow_html=True)
+    cols[1].markdown('''<center><span style="font-size:25px; font-family:'poppins'; color:black;">Software</span></center>''',unsafe_allow_html=True)
