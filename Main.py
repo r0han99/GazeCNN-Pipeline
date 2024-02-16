@@ -98,8 +98,11 @@ def check_template_matches(files_and_values):
 
 @st.cache_resource
 def load_model_engine():
-
-    model = load_model("./model-engine/MobileNetV2_gzcnn.keras", compile=False)
+    try:
+        model = load_model("./model-engine/MobileNetV2_gzcnn.keras", compile=False)
+    except:
+         model = load_model("./model-engine/MobileNetV2_gzcnn.h5", compile=False)
+    
     return model
 
 
