@@ -113,16 +113,26 @@ def rm_macos_binaries(item_list):
         
         return item_list
     
-def convert_minute_to_seconds(start, end):
+def convert_minute_to_seconds(time):
     # Function to convert a single minute value to seconds
     def to_seconds(minutes):
         return minutes * 60
 
-    # Convert start and end times from minutes to seconds
-    start_seconds = to_seconds(start)
-    end_seconds = to_seconds(end)
+    if len(str(time)) == 3:
+        s_minutes = int(str(time)[0])
+        #st.write(s_minutes)
+        s_seconds = int(str(time)[1:])
+        #st.write(s_seconds)
+
+    elif len(str(time)) == 4:
+        s_minutes = int(str(time)[:2])
+        #st.write(s_minutes)
+        s_seconds = int(str(time)[2:])
+        #st.write(s_seconds) 
+
+    time_seconds = to_seconds(s_minutes)+s_seconds
     
-    return start_seconds, end_seconds
+    return time_seconds
 
     
 
@@ -393,8 +403,13 @@ def main_cs():
 
                 s = data.set_index("candidate").loc[candidate, 'start']
                 e = data.set_index("candidate").loc[candidate, 'end']
+
+                #st.success(s)
+                #st.success(e)
                 
-                start_sec, end_sec = convert_minute_to_seconds(s,e)
+                start_sec = convert_minute_to_seconds(s)
+                end_sec = convert_minute_to_seconds(e)
+                #st.write(start_sec, end_sec)
 
     
                 # candidate_config = os.path.join(candidate_path, "config.json")

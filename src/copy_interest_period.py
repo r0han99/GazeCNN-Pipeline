@@ -46,17 +46,16 @@ def interest_area(start_frame, end_frame, candidate, candidate_path):
     file_names = ["frames_" +x+".jpg" for x in list(map(str,list(np.arange(start_frame, end_frame+1))))]
     count_for_validation = len(file_names)
 
-    with open(os.path.join(destination_folder_path, ".flag_file"), 'r') as f:
-        content = f.readline()
+    try:
 
+        with open(os.path.join(destination_folder_path, ".flag_file"), 'r') as f:
+            content = f.readline()
+            # validate if the files are already moved
+        if content == "interest-area":
+            
+            st.success(f"{candidate.capitalize()}: Interest Period is already created!")
 
-
-    # validate if the files are already moved
-    if content == "interest-area":
-        
-        st.success(f"{candidate.capitalize()}: Interest Period is already created!")
-
-    else:
+    except FileNotFoundError:
         
         st.markdown('Executing `Shutil Copy!` copying interest area to a separate folder.')
         progress_bar = st.progress(0) 
