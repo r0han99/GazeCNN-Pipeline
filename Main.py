@@ -117,15 +117,19 @@ def rm_macos_binaries(item_list):
         return item_list
     
 def convert_minute_to_seconds(time):
+    
     # Function to convert a single minute value to seconds
     def to_seconds(minutes):
         return minutes * 60
 
     if len(str(time)) == 3:
         s_minutes = int(str(time)[0])
-        #st.write(s_minutes)
+       #st.write(s_minutes)
         s_seconds = int(str(time)[1:])
         #st.write(s_seconds)
+        time_seconds = to_seconds(s_minutes)+s_seconds
+
+        return time_seconds
 
     elif len(str(time)) == 4:
         s_minutes = int(str(time)[:2])
@@ -133,9 +137,15 @@ def convert_minute_to_seconds(time):
         s_seconds = int(str(time)[2:])
         #st.write(s_seconds) 
 
-    time_seconds = to_seconds(s_minutes)+s_seconds
+        time_seconds = to_seconds(s_minutes)+s_seconds
+
+        return time_seconds
     
-    return time_seconds
+    elif len(str(time)) == 1:
+        return time
+
+    
+       
 
     
 

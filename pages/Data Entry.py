@@ -18,7 +18,20 @@ import pandas as pd
 
 
 
+def rm_macos_binaries(item_list):
 
+    try: 
+        item_list.remove(".DS_Store")
+        return item_list
+
+    except:
+        
+        return item_list
+    
+def convert_df_to_csv(df):
+    # Convert DataFrame to CSV, then to string (if no index is desired, set index=False)
+    return df.to_csv(index=False).encode('utf-8')
+    
 
 def check_template_matches(files_and_values):
 
@@ -34,138 +47,130 @@ def check_template_matches(files_and_values):
     return matches
 
 
-def rm_macos_binaries(item_list):
 
-    try: 
-        item_list.remove(".DS_Store")
-        return item_list
 
-    except:
+st.set_page_config(layout="wide", page_title="GazeCNN Software")
+st.markdown('''<center><span style="font-size:80px; font-family:'poppins'; color:orangered;">GazeCNN Pipeline Software</span></center>''',unsafe_allow_html=True)
+
+st.divider()
+st.markdown('''<center><span style="font-size:40px; font-family:'poppins'; color:dodgerblue; font-weight:bold;">Identifying Start and End Time of a Trial.</span></center>''',unsafe_allow_html=True)
+st.markdown("")
+st.markdown("")
+st.markdown('''<center><span style="font-size:25px; font-family:'poppins'; color:red; font-weight:bold;">Enter Start and End time as a whole number for example: time 1min:20secs i.e 1.20 will be 120.</span></center>''',unsafe_allow_html=True)
+st.markdown("")
+st.markdown("")
+st.divider()
+
+
+
+
+
+
+
+
+
+
+
+path = "./trials"
+    
+items = os.listdir(path)
+items = rm_macos_binaries(items)
+
+
+video_paths = []
+
+# Make lists prior to start entering
+for item in items:
+
+    # this will normally be directories of individual participants
+    candidate_path = os.path.join(path, item)
+    video_name = check_template_matches(os.listdir(candidate_path))
+    video_path = os.path.join(path, item, video_name[0])
+    video_paths.append(video_path)
+
+
+# st.write()
+    
+tabs = st.tabs(items)
+
+
+for tab,item, video_path in zip(tabs,items, video_paths):
+    tab.subheader(item)
+    tab.video(video_path, )
+
+
+st.divider()
+st.subheader("Enter Times in the Form.")
+
+with st.form("Record Data"):
+    video_pattern = "*.mp4"
+    
+    
+    times = {}
         
-        return item_list
+    for item in items:
+        
+        st.subheader(item,divider="rainbow")
+        cols = st.columns(2)
+        random_key = f"{item}_"
+        # st.write(random_key)
+        with cols[0]:
+            start = st.number_input("Start time", min_value=0, max_value=10000, key=f"start_{random_key}")
+        with cols[1]:                            
+            end = st.number_input("End time", min_value=0, max_value=10000, key=f"end_{random_key}")
+        
+        if start > end: 
+            st.error("Start Time Cannot be larger than End Time!")
     
-
-
-def show_trial_video(candidate, video_path):
-
-    
-    path = "./trials"
-    
-
-
-    with st.form(candidate):
-    
-        st.markdown(f"<center><span style='font-size:40px; font-weight:bold; '>Candidate - {candidate}</span></center>",unsafe_allow_html=True)
         st.divider()
-        candidate_path = os.path.join(path, candidate)
-        candidate_items = rm_macos_binaries(os.listdir(candidate_path))
-        video_pattern = "*.mp4"
-        candidate_start_end_pairs = {}
-        for item in candidate_items:
-            if fnmatch.fnmatch(item, video_pattern):
-                cols = st.columns([2,5,2])
-                cols[1].video(video_path)
-                cols = st.columns(2)
-                
-                random_key = f"{candidate}_{item}"
-                with cols[0]:
-                    start = st.number_input("Start time", min_value=0, max_value=10000, key=f"start_{random_key}")
-                with cols[1]:                            
-                    end = st.number_input("End time", min_value=0, max_value=10000, key=f"end_{random_key}")
-                # Store the start and end values in the dictionary
-                candidate_start_end_pairs[random_key] = (start, end)
-                st.divider()
 
-        
-        submitted = st.form_submit_button("Submit",use_container_width=True)
+        times[item] = {"start": start, "end": end}
 
-    if submitted: 
-        
-        if end < start:
-            st.error("End Time should not be less than Start Time")
 
-        return start, end 
-    
+    submit = st.form_submit_button("submit")
+            
+
+
+valid = True
+for candidate, (start, end) in times.items():
+    if start >= end:
+        valid = True
+
     else:
-        
-        return None, None
-
-
-    st.markdown("")
-    st.markdown("")
-    st.divider()
-    
+        valid = False
+        break
 
 
 
 
-def main():
+if submit and valid:
+    # Process/display the times dictionary in the desired format
+    st.write(times)
 
+    df = pd.DataFrame(list(times.items()), columns=['Item', 'Time'])
+    # Split the Time tuple into Start and End columns
+    df[['Start', 'End']] = pd.DataFrame(df['Time'].tolist(), index=df.index)
+    # Drop the original 'Time' column as it's no longer needed
+    df.drop(columns=['Time'], inplace=True)
 
-    path = "./trials"
-    
-    items = os.listdir(path)
-    items = rm_macos_binaries(items)
-    st.divider()
-    st.markdown('''<center><span style="font-size:40px; font-family:'poppins'; color:dodgerblue; font-weight:bold;">Identifying Start and End Time of a Trial.</span></center>''',unsafe_allow_html=True)
-    st.markdown("")
-    st.markdown("")
-    st.markdown('''<center><span style="font-size:25px; font-family:'poppins'; color:red; font-weight:bold;">Enter Start and End time as a whole number for example: time 1min:20secs i.e 1.20 will be 120.</span></center>''',unsafe_allow_html=True)
-    st.markdown("")
-    st.markdown("")
-    st.divider()
-    
+    df.columns = ["candidate","start","end"]
 
-    
-    if os.path.exists(path):
+    st.data_editor(df)
 
-        for candidate in items:
+    csv = convert_df_to_csv(df)
 
-            # this will normally be directories of individual participants
-            candidate_path = os.path.join(path, candidate)
-            video_name = check_template_matches(os.listdir(candidate_path))
-            video_path = os.path.join(path, candidate, video_name[0])
-            
-            start, end = show_trial_video(candidate, video_path)
-            
-            if candidate not in st.session_state:
+    st.download_button(
+    label="Download data as CSV",
+    data=csv,
+    file_name="config.csv",
+    mime="text/csv",
+)
 
-                st.session_state.candidate = (start, end)
-
-
-        #st.write(dict(st.session_state))
-        to_series = pd.Series(st.session_state)
-        # st.write(to_series)
-        filtered_series = to_series[to_series.index.str.startswith(('start', 'end'))]
-        # st.write(filtered_series)
-        start_series = filtered_series[filtered_series.index.str.startswith(('start'))]
-        end_series = filtered_series[filtered_series.index.str.startswith(('end'))]
-
-
-        st.divider()
-        st.subheader("Start and End Times Data Preview",divider="red")
-
-
-        # st.write(pd.DataFrame(start_series).reset_index())
-
-        start_df = pd.DataFrame(start_series).reset_index()
-        end_df = pd.DataFrame(end_series).reset_index()
-
-        start_df['index'] = start_df['index'].apply(lambda x: x.split("_")[1])
-        end_df['index'] = end_df['index'].apply(lambda x: x.split("_")[1])
-
-        start_df.columns = ['candidate','start']
-        end_df.columns = ['candidate','end']
-
-        config = pd.concat([start_df, end_df.drop('candidate',axis=1)],axis=1)
-        config = config.set_index("candidate")
-
-        st.data_editor(config)
-        
+elif submit:
+    st.write(times)
+    st.error(f"{candidate} times are invalid, Start time > or = End Time Fix it.")
 
 
 
-if __name__ == '__main__':
-    st.set_page_config(layout="wide", page_title="GazeCNN Software")
-    st.markdown('''<center><span style="font-size:80px; font-family:'poppins'; color:orangered;">GazeCNN Pipeline Software</span></center>''',unsafe_allow_html=True)
-    main()
+
+
