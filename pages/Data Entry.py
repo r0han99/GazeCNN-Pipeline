@@ -15,6 +15,8 @@ import fnmatch
 # data handlers
 import pandas as pd 
 
+# from src
+from src.dellab import add_logo
 
 
 
@@ -51,6 +53,9 @@ def check_template_matches(files_and_values):
 
 st.set_page_config(layout="wide", page_title="GazeCNN Software")
 st.markdown('''<center><span style="font-size:80px; font-family:'poppins'; color:orangered;">GazeCNN Pipeline Software</span></center>''',unsafe_allow_html=True)
+
+add_logo()
+
 
 st.divider()
 st.markdown('''<center><span style="font-size:40px; font-family:'poppins'; color:dodgerblue; font-weight:bold;">Identifying Start and End Time of a Trial.</span></center>''',unsafe_allow_html=True)

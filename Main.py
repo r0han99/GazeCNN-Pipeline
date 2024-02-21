@@ -27,6 +27,7 @@ from src.ffmpeg_construct import construct
 from src.estimate_frame import estimation
 from src.copy_interest_period import interest_area
 from src.cropper import crop_images
+from src.dellab import add_logo
 
 
 
@@ -141,7 +142,9 @@ def convert_minute_to_seconds(time):
 
         return time_seconds
     
-    elif len(str(time)) == 1:
+    
+    elif len(str(time)) <=2 :
+        
         return time
 
     
@@ -422,6 +425,7 @@ def main_cs():
                 
                 start_sec = convert_minute_to_seconds(s)
                 end_sec = convert_minute_to_seconds(e)
+                #st.write(end_sec)
                 #st.write(start_sec, end_sec)
 
     
@@ -502,7 +506,7 @@ def main_cs():
                 class_index = ['NA', 'Notation', 'SpaceBarScreen', 'Keyboard']
                 st.markdown("`MobileNetV2_gzcnn` model-engine loaded.")
 
-
+            
 
             for candidate in items:
                 candidate_path = os.path.join(TRIALS, candidate)
@@ -525,6 +529,22 @@ def main_cs():
                         st.markdown(f"<span><span style='font-size:30px; font-weight:bold;'>{candidate.capitalize()}</span> <span style='color:green;'>already classfied! check datatable folders within the participant folder.</span></span>", unsafe_allow_html=True)
                 
                 except FileNotFoundError:
+
+                    with st.status("Estimating the Time to Process all Frames", expanded=False) as STATUS_TIME:
+                        total_time = []
+                        for candidate, num_frames in zip(items, sample_size_for_video.values()):
+                            time_taken = num_frames * 0.0209
+                            time_taken = np.round((time_taken / 60), 3)
+                            total_time.append(time_taken)
+
+                            st.markdown(f'''<span style="font-family:avenir; font-weight:bold;"><span style="font-size:25px; color:orangered;">{candidate}</span> <span>No of Frames: {num_frames}</span>, <br>Approximate Time to Finish ≈ <span style='font-size:30px;'>{time_taken}</span>Minutes</span>''',unsafe_allow_html=True)
+
+                        STATUS_TIME.update(expanded=True)
+
+                    st.markdown(f'''<span style="font-family:avenir; font-weight:bold; font-size:27px;">Total Time to Finish ≈ <span style='font-size:35px;'>{np.round(sum(total_time),3)}</span>Minutes</span>''',unsafe_allow_html=True)
+                    st.divider()
+
+
                     # Initialize progress bar
                     progress_bar = st.progress(0)
 
@@ -620,12 +640,5 @@ if __name__ == '__main__':
     st.set_page_config(layout="wide", page_title="GazeCNN Software")
     st.markdown('''<center><span style="font-size:80px; font-family:'poppins'; color:orangered;">GazeCNN Pipeline Software</span></center>''',unsafe_allow_html=True)
     main_cs()
-
-    for _ in range(10):
-        st.sidebar.markdown("")
-    cols = st.sidebar.columns([3,1,3])
-    cols[0].image("./assets/brain.png", width=100)
-    cols[1].markdown("")
-
-    cols[1].markdown('''<center><span style="font-size:30px; font-family:'poppins'; color:black; font-weight:bold;"><a href="https://www.colorado.edu/lab/del/" style="color: black; text-decoration: none;"><u>Dellab</u></a></span></center>''',unsafe_allow_html=True)
-    cols[1].markdown('''<center><span style="font-size:25px; font-family:'poppins'; color:black;">Software</span></center>''',unsafe_allow_html=True)
+    add_logo()
+    
