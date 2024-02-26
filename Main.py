@@ -85,7 +85,7 @@ def preprocess_image(image):
 
 def check_template_matches(files_and_values):
 
-    items_to_match = ["gaze.csv", "*.mp4", "config.json"]
+    items_to_match = ["gaze.csv", "*.mp4"]
 
     
     for template in items_to_match:
@@ -456,14 +456,14 @@ def main_cs():
                 source_images = os.path.join(candidate_path, f"{candidate}_interest_period")
 
 
-                candidate_config = os.path.join(candidate_path, "config.json")
+                # candidate_config = os.path.join(candidate_path, "config.json")
                 
-                with open(candidate_config, 'r') as f:
-                    each_candidate_config = json.load(f)
+                # with open(candidate_config, 'r') as f:
+                #     each_candidate_config = json.load(f)
 
-                start_sec = each_candidate_config['start']
-                end_sec = each_candidate_config['end']
-                start_frame, end_frame = estimation(start_sec, end_sec)
+                # start_sec = each_candidate_config['start']
+                # end_sec = each_candidate_config['end']
+                # start_frame, end_frame = estimation(start_sec, end_sec)
 
 
                 try:
