@@ -607,6 +607,13 @@ def main_cs():
                             with open(os.path.join(candidate_data_table_dir, ".flag_file"), 'w') as f:
                                 f.write("classfied")
 
+                            print("Logging into Terminal Window!")
+                            print("--"*25)
+                            print("Process Elapsed Successfully.")
+                            print("Find the CSV Inside {candidate_data_table_dir}_behvioral_datatable folder.")
+
+
+
             
             st.divider()
 
