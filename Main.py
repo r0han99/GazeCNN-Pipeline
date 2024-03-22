@@ -178,7 +178,7 @@ def validate_requirements():
 
         items = os.listdir(TRIALS)
         items = rm_macos_binaries(items)
-        items.remove(".rename-flag")
+        # items.remove(".rename-flag")
         
         st.markdown("#### Checking if the directories have `Gaze.csv` and `Trial.mp4`")
         st.divider()
@@ -240,40 +240,46 @@ def main_cs():
         old_items = rm_macos_binaries(old_items)
         new_items = list(map(fetch_pid, old_items))
 
-        
-        
-        
         try:
-            with open(os.path.join(path_to_participants, ".rename-flag"), 'r') as f:
-                content = f.readline()
+            new_items.remove(".rename-flag")
+            old_items.remove(".rename-flag")
+        except:
+            pass
 
-            if content == "renamed":
-                st.markdown("`Folder names already processed!.`")
-                new_items.remove(".rename-flag")
-                old_items.remove(".rename-flag")
-                for old_name, new_name in zip(old_items, new_items):
-                    st.markdown(f"- **{old_name} → :green[{new_name}]**")
-            
-        except FileNotFoundError:
-            st.markdown("Renaming Participant folders.")
-            
-            for old_name, new_name in zip(old_items, new_items):
-                st.markdown(f"- **{old_name} → :green[{new_name}]**")
-                
-
-            for old_name, new_name in zip(old_items, new_items):
-                old_item_path = os.path.join(path_to_participants, old_name)
-                new_item_path = os.path.join(path_to_participants, new_name) 
+        # st.markdown("Renaming Participant folders.")
+        processed_flag = False
+        for old_name, new_name in zip(old_items, new_items):
+            old_item_path = os.path.join(path_to_participants, old_name)
+            new_item_path = os.path.join(path_to_participants, new_name) 
+        
             try:
-                os.rename(old_item_path, new_item_path)
-                st.info(f"Folder '{old_name}' renamed to '{new_name}' successfully.")
-            except FileNotFoundError:
-                st.error(f"Folder '{old_name}' not found.")
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+                with open(os.path.join(path_to_participants, new_name, ".rename-flag"), 'r') as f:
+                    content = f.readline()
+
+                if content == "renamed":
+                    processed_flag = True
+                    
             
-            with open(os.path.join(path_to_participants, ".rename-flag"), 'w') as f:
-                f.write("renamed")
+            except FileNotFoundError:
+
+                processed_flag = False
+
+                try:
+                    os.rename(old_item_path, new_item_path)
+                    st.info(f"Folder '{old_name}' renamed to '{new_name}' successfully.")
+                except FileNotFoundError:
+                    st.error(f"Folder '{old_name}' not found.")
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
+                
+                with open(os.path.join(path_to_participants, new_name, ".rename-flag"), 'w') as f:
+                    f.write("renamed")
+
+        if processed_flag:
+            st.markdown("`All Folder names already processed!.`")
+
+        st.markdown(f'''Participants in the Queue for Today i.e: **{datetime.now().strftime("%d %B, %Y")}**''')
+        st.write([f"ParticpantID: {pid}" for pid in sorted(new_items)])
 
 
     st.divider()
@@ -391,13 +397,15 @@ def main_cs():
                 with open(os.path.join(TRIALS, item, ".item_source_existence"), "r") as f:
                     content = f.readlines()
 
-                if content != 'deleted':
+            except:
+
+                pass
                     
-                    if num_of_frames_for_validation == for_validation[item]:
-                        st.info(f"Decomposed Images Already Exists For {item}")
-                
-            except FileNotFoundError:
-            
+
+            if num_of_frames_for_validation == for_validation[item] or content == 'deleted':
+                st.info(f"Decomposed Images Already Exists For {item}")
+
+            else:
                 with st.status(f"Running Process for {item}", expanded=False) as STATUS:
                     
                     process = subprocess.Popen(

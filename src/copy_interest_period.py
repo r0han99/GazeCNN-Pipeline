@@ -43,7 +43,7 @@ def interest_area(start_frame, end_frame, candidate, candidate_path):
 
     destination_folder_path = folder_path
 
-    file_names = ["frames_" +x+".jpg" for x in list(map(str,list(np.arange(start_frame, end_frame+1))))]
+    file_names = ["frames_{:04d}.jpg".format(int(x)) for x in np.arange(start_frame, end_frame+1)]
     count_for_validation = len(file_names)
 
     try:
