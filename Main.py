@@ -12,6 +12,7 @@ import subprocess
 import glob
 import json
 import fnmatch
+from datetime import datetime
 
 # data handlers
 import pandas as pd 
@@ -34,7 +35,6 @@ from src.dellab import add_logo
 
 
 # global paths
-
 TRIALS = './trials'
 
 
@@ -51,6 +51,7 @@ def count_samples(items):
         path_to_csv = os.path.join(TRIALS, item, "gaze.csv")
         
         mp4_files = glob.glob(os.path.join(TRIALS, item, '*.mp4'))
+        # st.write(os.path.join(TRIALS, item, '*.mp4'))
         video_name = mp4_files[0].split("/")[-1::][0]
         
         path_to_video =  mp4_files[0]
@@ -177,6 +178,7 @@ def validate_requirements():
 
         items = os.listdir(TRIALS)
         items = rm_macos_binaries(items)
+        items.remove(".rename-flag")
         
         st.markdown("#### Checking if the directories have `Gaze.csv` and `Trial.mp4`")
         st.divider()
@@ -209,7 +211,7 @@ def validate_requirements():
         st.code(invalid_list)
 
         if len(valid_list) >= len(invalid_list):
-            return True, valid_list
+            return True, valid_list, invalid_list
         else:
             return False, invalid_list
                 
@@ -219,6 +221,11 @@ def validate_requirements():
         st.error("Trials Path Missing")
 
 
+def fetch_pid(candidate):
+
+    
+    return candidate.split("_")[0]
+    
     
 
 
@@ -226,8 +233,53 @@ def main_cs():
     
     st.divider()
 
-    cols = st.columns([5,8])
+    with st.expander("Participants in the Queue", expanded=False):
+        # list out all the items
+        path_to_participants = "./trials"
+        old_items = os.listdir(path_to_participants)
+        old_items = rm_macos_binaries(old_items)
+        new_items = list(map(fetch_pid, old_items))
+
         
+        
+        
+        try:
+            with open(os.path.join(path_to_participants, ".rename-flag"), 'r') as f:
+                content = f.readline()
+
+            if content == "renamed":
+                st.markdown("`Folder names already processed!.`")
+                new_items.remove(".rename-flag")
+                old_items.remove(".rename-flag")
+                for old_name, new_name in zip(old_items, new_items):
+                    st.markdown(f"- **{old_name} → :green[{new_name}]**")
+            
+        except FileNotFoundError:
+            st.markdown("Renaming Participant folders.")
+            
+            for old_name, new_name in zip(old_items, new_items):
+                st.markdown(f"- **{old_name} → :green[{new_name}]**")
+                
+
+            for old_name, new_name in zip(old_items, new_items):
+                old_item_path = os.path.join(path_to_participants, old_name)
+                new_item_path = os.path.join(path_to_participants, new_name) 
+            try:
+                os.rename(old_item_path, new_item_path)
+                st.info(f"Folder '{old_name}' renamed to '{new_name}' successfully.")
+            except FileNotFoundError:
+                st.error(f"Folder '{old_name}' not found.")
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+            
+            with open(os.path.join(path_to_participants, ".rename-flag"), 'w') as f:
+                f.write("renamed")
+
+
+    st.divider()
+
+
+    cols = st.columns([5,8])
     cols[0].subheader("Click Here to Start Processing →")
     
 
@@ -247,7 +299,10 @@ def main_cs():
             
             
 
-            status, items = validate_requirements()
+            status, items, invalid_list = validate_requirements()
+            
+            items = list(map(fetch_pid, items))
+            
 
             if status:
 
@@ -330,12 +385,19 @@ def main_cs():
 
             num_of_frames_for_validation = len(rm_macos_binaries(os.listdir(os.path.join(TRIALS, item, f"{item}_source"))))
 
-            if num_of_frames_for_validation == for_validation[item]:
-
-                st.info(f"Decomposed Images Already Exists For {item}")
+            try:
                 
-            else:
 
+                with open(os.path.join(TRIALS, item, ".item_source_existence"), "r") as f:
+                    content = f.readlines()
+
+                if content != 'deleted':
+                    
+                    if num_of_frames_for_validation == for_validation[item]:
+                        st.info(f"Decomposed Images Already Exists For {item}")
+                
+            except FileNotFoundError:
+            
                 with st.status(f"Running Process for {item}", expanded=False) as STATUS:
                     
                     process = subprocess.Popen(
@@ -417,16 +479,20 @@ def main_cs():
                 candidate_path = os.path.join(TRIALS, candidate)
                 # candidate_items = rm_macos_binaries(os.listdir(candidate_path))
 
-                s = data.set_index("candidate").loc[candidate, 'start']
-                e = data.set_index("candidate").loc[candidate, 'end']
+                s = data.set_index("candidate").loc[int(candidate), 'start']
+                e = data.set_index("candidate").loc[int(candidate), 'end']
 
-                #st.success(s)
-                #st.success(e)
+                
+
+                # st.success(s)
+                # st.success(e)
                 
                 start_sec = convert_minute_to_seconds(s)
                 end_sec = convert_minute_to_seconds(e)
-                #st.write(end_sec)
-                #st.write(start_sec, end_sec)
+
+            
+                # st.write(end_sec)
+                # st.write(start_sec, end_sec)
 
     
                 # candidate_config = os.path.join(candidate_path, "config.json")
@@ -440,6 +506,9 @@ def main_cs():
         
                 #st.markdown(f"- Estimating Interest area ( Start Frame to End Frame ) for `{candidate}`")
                 start_frame, end_frame = estimation(start_sec, end_sec)
+
+                # st.success(start_frame)
+                # st.success(end_frame)
                 
             
                 # COPY interest Area to other folder. 
@@ -610,19 +679,61 @@ def main_cs():
                             print("Logging into Terminal Window!")
                             print("--"*25)
                             print("Process Elapsed Successfully.")
-                            print("Find the CSV Inside {candidate_data_table_dir}_behvioral_datatable folder.")
+                            print(f"Find the CSV Inside {candidate_data_table_dir}_behvioral_datatable folder.")
+                    
+                    
+                    st.divider()
+                    st.subheader(":red[Commencing Delete Protocol]", divider="red")
 
+                    try:
+                        for item in items:
+                            source_folder_path = os.path.join(TRIALS, item, f'{item}_source')
+                            shutil.rmtree(source_folder_path)
+                            st.markdown(f":green[{item}] source images deleted.")
+                            
+                            with open(os.path.join(TRIALS, item, ".item_source_existence"), "w") as f:
+                                f.write("deleted")
+
+
+                        print(f"Folder '{source_folder_path}' and all its contents deleted successfully.")
+                    except FileNotFoundError:
+                        print(f"Folder '{source_folder_path}' not found.")
+                    except PermissionError:
+                        print(f"No permission to delete folder '{source_folder_path}'.")
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+                    
+                    st.divider()
+                    
+
+                    st.subheader("Writing Progress Log.",divider="green")
+                    os.makedirs("Candidate_Progress_Log", exist_ok=True)
+                    date_ = datetime.now().strftime("%d_%B")
+                    with open(os.path.join("Candidate_Progress_Log", f"processed_candidates_{date_}.txt"), 'a') as f:
+                        for candidate in items:
+                            f.write(f'''Participant: {candidate}, Processed!\n''')
+                    
+                    date_ = datetime.now().strftime("%d_%B")
+
+                    if len(invalid_list) >= 1 :
+                        with open(os.path.join("Candidate_Progress_Log", f"unprocessed_candidates_{date_}.txt"), 'a') as f:
+                            for candidate in invalid_list:
+                                f.write(f'''Participant: {candidate}, Cannot be Processed (at mentioned date) Check requirements i.e *.mp4 and gaze.csv!\n''')
+
+                    st.markdown(":green[logged!]")
 
 
             
             st.divider()
-
-            st.title("Process Completed! Check Datafolders.")
-
-            st.divider()
-            st.title(":red[Commencing Delete Protocol]")
+            st.title(":green[Process Completed!] Check Datafolders and Process Logs.")
+            
 
             
+
+
+
+            
+                    
 
             
 
