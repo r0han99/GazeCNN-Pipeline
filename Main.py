@@ -160,10 +160,21 @@ def extract_number(filename):
 def rm_flag_file(item_list):
     try: 
         item_list.remove(".flag_file")
+        
         return item_list
 
     except:
         
+        return item_list
+    
+def rm_interest_period_flag_file(item_list):
+    try:
+        item_list.remove(".interest_area_flag_file")
+
+        return item_list
+    
+    except:
+
         return item_list
 
 
@@ -396,14 +407,15 @@ def main_cs():
 
                 with open(os.path.join(TRIALS, item, ".item_source_existence"), "r") as f:
                     content = f.readlines()
+                    
 
             except:
 
                 pass
                     
 
-            if num_of_frames_for_validation == for_validation[item] or content == 'deleted':
-                st.info(f"Decomposed Images Already Exists For {item}")
+            if num_of_frames_for_validation == for_validation[item] or content[0] == 'deleted':
+                st.info(f"Decomposed Images Already Exists For {item} or deleted!")
 
             else:
                 with st.status(f"Running Process for {item}", expanded=False) as STATUS:
@@ -483,6 +495,8 @@ def main_cs():
             candidate_interest_period_json = {}
 
             data = pd.read_csv("config.csv")
+
+            interest_area_num_frames = {}
             for candidate in items:
                 candidate_path = os.path.join(TRIALS, candidate)
                 # candidate_items = rm_macos_binaries(os.listdir(candidate_path))
@@ -491,25 +505,8 @@ def main_cs():
                 e = data.set_index("candidate").loc[int(candidate), 'end']
 
                 
-
-                # st.success(s)
-                # st.success(e)
-                
                 start_sec = convert_minute_to_seconds(s)
                 end_sec = convert_minute_to_seconds(e)
-
-            
-                # st.write(end_sec)
-                # st.write(start_sec, end_sec)
-
-    
-                # candidate_config = os.path.join(candidate_path, "config.json")
-                
-                # with open(candidate_config, 'r') as f:
-                #     each_candidate_config = json.load(f)
-
-                # start_sec = each_candidate_config['start']
-                # end_sec = each_candidate_config['end']
 
         
                 #st.markdown(f"- Estimating Interest area ( Start Frame to End Frame ) for `{candidate}`")
@@ -518,6 +515,7 @@ def main_cs():
                 # st.success(start_frame)
                 # st.success(end_frame)
                 
+                interest_area_num_frames[candidate] = abs(end_frame - start_frame)
             
                 # COPY interest Area to other folder. 
                 interest_area(start_frame, end_frame, candidate, candidate_path)
@@ -532,15 +530,17 @@ def main_cs():
                 gaze_csv = pd.read_csv(os.path.join(candidate_path, "gaze.csv"))
                 source_images = os.path.join(candidate_path, f"{candidate}_interest_period")
 
+                s = data.set_index("candidate").loc[int(candidate), 'start']
+                e = data.set_index("candidate").loc[int(candidate), 'end']
 
-                # candidate_config = os.path.join(candidate_path, "config.json")
                 
-                # with open(candidate_config, 'r') as f:
-                #     each_candidate_config = json.load(f)
+                start_sec = convert_minute_to_seconds(s)
+                end_sec = convert_minute_to_seconds(e)
 
-                # start_sec = each_candidate_config['start']
-                # end_sec = each_candidate_config['end']
-                # start_frame, end_frame = estimation(start_sec, end_sec)
+        
+                #st.markdown(f"- Estimating Interest area ( Start Frame to End Frame ) for `{candidate}`")
+                start_frame, end_frame = estimation(start_sec, end_sec)
+
 
 
                 try:
@@ -553,7 +553,8 @@ def main_cs():
                 except FileNotFoundError:
 
                     # st.success("in except")
-                    image_files = rm_macos_binaries(rm_flag_file(os.listdir(source_images)))
+                    image_files = rm_macos_binaries(rm_interest_period_flag_file(os.listdir(source_images)))
+                    
                     # st.success(len(image_files))
 
                     sorted_img_files  = sorted(image_files, key=extract_number)
@@ -583,6 +584,19 @@ def main_cs():
                 class_index = ['NA', 'Notation', 'SpaceBarScreen', 'Keyboard']
                 st.markdown("`MobileNetV2_gzcnn` model-engine loaded.")
 
+            with st.status("Estimating the Time to Process all Frames", expanded=False) as STATUS_TIME:
+                total_time = []
+                for candidate, num_frames in zip(interest_area_num_frames.keys(), interest_area_num_frames.values()):
+                    time_taken = num_frames * 0.0209
+                    time_taken = np.round((time_taken / 60), 3)
+                    total_time.append(time_taken)
+
+                    st.markdown(f'''<span style="font-family:avenir; font-weight:bold;"><span style="font-size:25px; color:orangered;">{candidate}</span> <span>No of Frames: {num_frames}</span>, <br>Approximate Time to Finish ≈ <span style='font-size:30px;'>{time_taken}</span>Minutes</span>''',unsafe_allow_html=True)
+
+                STATUS_TIME.update(expanded=True)
+
+            st.markdown(f'''<span style="font-family:avenir; font-weight:bold; font-size:27px;">Total Time to Finish ≈ <span style='font-size:35px;'>{np.round(sum(total_time),3)}</span>Minutes</span>''',unsafe_allow_html=True)
+            st.divider()
             
 
             for candidate in items:
@@ -592,7 +606,7 @@ def main_cs():
 
                 # results dir
                 candidate_data_table_dir = os.path.join(candidate_path, f"{candidate}_behvioral_datatable")
-                os.makedirs(candidate_data_table_dir,exist_ok=True )
+                os.makedirs(candidate_data_table_dir, exist_ok=True )
 
 
                 CLASSIFICATION_DICTIONARY = {}
@@ -607,20 +621,7 @@ def main_cs():
                 
                 except FileNotFoundError:
 
-                    with st.status("Estimating the Time to Process all Frames", expanded=False) as STATUS_TIME:
-                        total_time = []
-                        for candidate, num_frames in zip(items, sample_size_for_video.values()):
-                            time_taken = num_frames * 0.0209
-                            time_taken = np.round((time_taken / 60), 3)
-                            total_time.append(time_taken)
-
-                            st.markdown(f'''<span style="font-family:avenir; font-weight:bold;"><span style="font-size:25px; color:orangered;">{candidate}</span> <span>No of Frames: {num_frames}</span>, <br>Approximate Time to Finish ≈ <span style='font-size:30px;'>{time_taken}</span>Minutes</span>''',unsafe_allow_html=True)
-
-                        STATUS_TIME.update(expanded=True)
-
-                    st.markdown(f'''<span style="font-family:avenir; font-weight:bold; font-size:27px;">Total Time to Finish ≈ <span style='font-size:35px;'>{np.round(sum(total_time),3)}</span>Minutes</span>''',unsafe_allow_html=True)
-                    st.divider()
-
+                    
 
                     # Initialize progress bar
                     progress_bar = st.progress(0)
@@ -652,6 +653,7 @@ def main_cs():
                                 binary_prediction[0, max_prob_index] = 1
                                 #st.code(f"Image: {filename}, Predictions: {binary_prediction}")
                                 CLASSIFICATION_DICTIONARY[filename] = binary_prediction
+
                             else:
                                 st.error(f"Image: {filename} has incorrect dimensions and was skipped.")
             
@@ -660,81 +662,82 @@ def main_cs():
 
 
             
-                    with st.status(f"Packaging {candidate} Behavioural DataTable"):
-                            test = pd.DataFrame(pd.Series(CLASSIFICATION_DICTIONARY))
-                            test[0] = test[0].apply(lambda x:x[0])
-                            test.columns = ['predictions']
-                            st.markdown("- Creating Raw DataFrame.")
-                            
-                            exp_df = pd.DataFrame(test["predictions"].to_list(), columns=class_index)
-                            exp_df = exp_df.astype(int)
-                            st.markdown("- Managing Data Types.")
+                with st.status(f"Packaging {candidate} Behavioural DataTable"):
+                        test = pd.DataFrame(pd.Series(CLASSIFICATION_DICTIONARY))
+                        test[0] = test[0].apply(lambda x:x[0])
+                        test.columns = ['predictions']
+                        st.markdown("- Creating Raw DataFrame.")
+                        
+                        exp_df = pd.DataFrame(test["predictions"].to_list(), columns=class_index)
+                        exp_df = exp_df.astype(int)
+                        st.markdown("- Managing Data Types.")
 
-                            test = test.reset_index()
-                            test.columns = ['frames','_']
-                            exp_df['frames'] = test['frames']
-                            
-                            exp_df = exp_df.sort_values(by='frames').reset_index(drop=True)
-                            exp_df = exp_df[['frames'] + class_index]
-                            st.markdown("- Organising Data Table.")
+                        test = test.reset_index()
+                        test.columns = ['frames','_']
+                        exp_df['frames'] = test['frames']
+                        
+                        exp_df = exp_df.sort_values(by='frames').reset_index(drop=True)
+                        exp_df = exp_df[['frames'] + class_index]
+                        st.markdown("- Organising Data Table.")
 
-                            st.success(f"Saving the data to {candidate_data_table_dir}/{candidate}_datatable.csv")
-                            exp_df.to_csv(os.path.join(candidate_data_table_dir, f"{candidate}_datatable.csv"))
+                        st.success(f"Saving the data to {candidate_data_table_dir}/{candidate}_datatable.csv")
+                        exp_df.to_csv(os.path.join(candidate_data_table_dir, f"{candidate}_datatable.csv"))
 
-                            with open(os.path.join(candidate_data_table_dir, ".flag_file"), 'w') as f:
-                                f.write("classfied")
+                        with open(os.path.join(candidate_data_table_dir, ".flag_file"), 'w') as f:
+                            f.write("classfied")
 
-                            print("Logging into Terminal Window!")
-                            print("--"*25)
-                            print("Process Elapsed Successfully.")
-                            print(f"Find the CSV Inside {candidate_data_table_dir}_behvioral_datatable folder.")
+                        print("Logging into Terminal Window!")
+                        print("--"*25)
+                        print("Process Elapsed Successfully.")
+                        print(f"Find the CSV Inside {candidate_data_table_dir}_behvioral_datatable folder.")
                     
                     
-                    st.divider()
-                    st.subheader(":red[Commencing Delete Protocol]", divider="red")
+            st.divider()
+            # st.subheader(":red[Commencing Delete Protocol]", divider="red")
 
-                    try:
-                        for item in items:
-                            source_folder_path = os.path.join(TRIALS, item, f'{item}_source')
-                            shutil.rmtree(source_folder_path)
-                            st.markdown(f":green[{item}] source images deleted.")
-                            
-                            with open(os.path.join(TRIALS, item, ".item_source_existence"), "w") as f:
-                                f.write("deleted")
-
-
-                        print(f"Folder '{source_folder_path}' and all its contents deleted successfully.")
-                    except FileNotFoundError:
-                        print(f"Folder '{source_folder_path}' not found.")
-                    except PermissionError:
-                        print(f"No permission to delete folder '{source_folder_path}'.")
-                    except Exception as e:
-                        print(f"An error occurred: {e}")
+            # try:
+            #     for item in items:
+            #         source_folder_path = os.path.join(TRIALS, item, f'{item}_source')
+            #         shutil.rmtree(source_folder_path)
+            #         st.markdown(f":green[{item}] source images deleted.")
                     
-                    st.divider()
-                    
-
-                    st.subheader("Writing Progress Log.",divider="green")
-                    os.makedirs("Candidate_Progress_Log", exist_ok=True)
-                    date_ = datetime.now().strftime("%d_%B")
-                    with open(os.path.join("Candidate_Progress_Log", f"processed_candidates_{date_}.txt"), 'a') as f:
-                        for candidate in items:
-                            f.write(f'''Participant: {candidate}, Processed!\n''')
-                    
-                    date_ = datetime.now().strftime("%d_%B")
-
-                    if len(invalid_list) >= 1 :
-                        with open(os.path.join("Candidate_Progress_Log", f"unprocessed_candidates_{date_}.txt"), 'a') as f:
-                            for candidate in invalid_list:
-                                f.write(f'''Participant: {candidate}, Cannot be Processed (at mentioned date) Check requirements i.e *.mp4 and gaze.csv!\n''')
-
-                    st.markdown(":green[logged!]")
+            #         with open(os.path.join(TRIALS, item, ".item_source_existence"), "w") as f:
+            #             f.write("deleted")
 
 
+            #     print(f"Folder '{source_folder_path}' and all its contents deleted successfully.")
+            # except FileNotFoundError:
+            #     print(f"Folder '{source_folder_path}' not found.")
+            # except PermissionError:
+            #     print(f"No permission to delete folder '{source_folder_path}'.")
+            # except Exception as e:
+            #     print(f"An error occurred: {e}")
             
+            
+            # st.divider()
+            
+
+            st.subheader("Writing Progress Log.",divider="green")
+            os.makedirs("Candidate_Progress_Log", exist_ok=True)
+            date_ = datetime.now().strftime("%d_%B")
+            with open(os.path.join("Candidate_Progress_Log", f"processed_candidates_{date_}.txt"), 'a') as f:
+                for candidate in items:
+                    f.write(f'''Participant: {candidate}, Processed!\n''')
+            
+            date_ = datetime.now().strftime("%d_%B")
+
+            if len(invalid_list) >= 1 :
+                with open(os.path.join("Candidate_Progress_Log", f"unprocessed_candidates_{date_}.txt"), 'a') as f:
+                    for candidate in invalid_list:
+                        f.write(f'''Participant: {candidate}, Cannot be Processed (at mentioned date) Check requirements i.e *.mp4 and gaze.csv!\n''')
+
+            st.markdown(":green[logged!]")
+
+
+    
             st.divider()
             st.title(":green[Process Completed!] Check Datafolders and Process Logs.")
-            
+                    
 
             
 
